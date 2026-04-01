@@ -57,9 +57,10 @@ const DEFAULT_GROUP_ID = '你的主群组ID';
     创建新 Worker，粘贴全部代码并部署。
 
     关键步骤：访问以下网址绑定 Webhook：
-    https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<你的域名>
+   
+   https://api.telegram.org/bot<你的TOKEN>/setWebhook?url=https://<你的WORKER域名>
 
-3. 初始化 (重要)
+4. 初始化 (重要)
 
 部署完成后，请务必用你的 Telegram 账号私聊机器人发送以下指令，以开启“编辑消息拦截”权限：
 
