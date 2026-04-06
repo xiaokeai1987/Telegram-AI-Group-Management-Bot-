@@ -12,10 +12,10 @@ const OPENROUTER_KEY = 'api';
 const OPENROUTER_KEY_2 = 'api'; 
 
 // 3. 你的机器人用户名 (不带 @)
-const BOT_USERNAME = ''; 
+const BOT_USERNAME = 'yourbotname'; 
 
 // 4. 主群组兜底 ID (直接发 /unban 时，默认在此群执行)
-const DEFAULT_GROUP_ID = ''; 
+const DEFAULT_GROUP_ID = '-yourgroupID'; 
 
 // 5. OpenRouter 使用的模型 (账号 1)
 const AI_MODEL = 'openrouter/free';
