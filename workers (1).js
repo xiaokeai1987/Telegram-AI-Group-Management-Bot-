@@ -3,19 +3,19 @@
 // ==========================================
 
 // 1. Telegram Bot Token
-const TG_TOKEN = '8625968183:AAGfPUFEI5lE-rTfnU6rccxpLk1LsdyNvQk'; 
+const TG_TOKEN = ''; 
 
 // 2. OpenRouter API Key (账号 1)
-const OPENROUTER_KEY = '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'; 
+const OPENROUTER_KEY = ''; 
 
 // 🌟 新增 1：第二个 OpenRouter API Key (账号 2)
-const OPENROUTER_KEY_2 = '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'; 
+const OPENROUTER_KEY_2 = ''; 
 
 // 3. 你的机器人用户名 (不带 @)
-const BOT_USERNAME = 'Aiguanliyuan'; 
+const BOT_USERNAME = ''; 
 
 // 4. 主群组兜底 ID (直接发 /unban 时，默认在此群执行)
-const DEFAULT_GROUP_ID = '-1002837867003'; 
+const DEFAULT_GROUP_ID = ''; 
 
 // 5. OpenRouter 使用的模型 (账号 1)
 const AI_MODEL = 'openrouter/free';
