@@ -3,13 +3,13 @@
 // ==========================================
 
 // 1. Telegram Bot Token
-const TG_TOKEN = ''; 
+const TG_TOKEN = 'api'; 
 
 // 2. OpenRouter API Key (账号 1)
-const OPENROUTER_KEY = ''; 
+const OPENROUTER_KEY = 'api'; 
 
 // 🌟 新增 1：第二个 OpenRouter API Key (账号 2)
-const OPENROUTER_KEY_2 = ''; 
+const OPENROUTER_KEY_2 = 'api'; 
 
 // 3. 你的机器人用户名 (不带 @)
 const BOT_USERNAME = ''; 
