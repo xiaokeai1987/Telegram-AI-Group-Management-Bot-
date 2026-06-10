@@ -2,20 +2,20 @@
 // ⚙️ 核心硬编码配置区 
 // ========================================== 
 
-// 1. Telegram Bot Token (通过 @BotFather 获取)
-const TG_TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN';  
+// 1. Telegram Bot Token 
+const TG_TOKEN = '电报api';  
 
-// 2. OpenRouter API Key (主节点账号) 
-const OPENROUTER_KEY = 'YOUR_OPENROUTER_API_KEY_1';  
+// 2. OpenRouter API Key (账号 1) 
+const OPENROUTER_KEY = '你的api';  
 
-// 🌟 新增 1：第二个 OpenRouter API Key (备用节点账号) 
-const OPENROUTER_KEY_2 = 'YOUR_OPENROUTER_API_KEY_2';  
+// 🌟 新增 1：第二个 OpenRouter API Key (账号 2) 
+const OPENROUTER_KEY_2 = '你的api';  
 
-// 3. 你的机器人用户名 (不带 @，用于解封链接跳转) 
-const BOT_USERNAME = 'your_bot_username';  
+// 3. 你的机器人用户名 (不带 @) 
+const BOT_USERNAME = 'kguanliyuan2025bot';  
 
-// 4. 主群组兜底 ID (直接发 /unban 时，默认在此群执行，例：-100123456789) 
-const DEFAULT_GROUP_ID = 'YOUR_DEFAULT_GROUP_ID';  
+// 4. 主群组兜底 ID (直接发 /unban 时，默认在此群执行) 
+const DEFAULT_GROUP_ID = '-你的群组id';  
 
 // 5. OpenRouter 使用的模型 (账号 1) 
 const AI_MODEL = 'openrouter/free'; 
@@ -339,12 +339,15 @@ async function handleUnban(tgApiUrl, targetGroupId, userId, privateChatId, sendR
   return unrestrictData.ok;  
 } 
 
-// 🌟 带 8 秒硬熔断的单路 AI 函数 (防死机) 
+// 🌟 核心防线：带有 AbortController 底层网络熔断的 AI 函数
 async function singleAIFetch(text, key, model, aiName) { 
-  try { 
-    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 8000)); 
+  // 使用 AbortController 替代 Promise.race，从网络底层真正掐断超时请求
+  const controller = new AbortController(); 
+  // Cloudflare Workers 时间极为严格，超时设置下调至 6 秒
+  const timeoutId = setTimeout(() => controller.abort(), 6000); 
 
-    const fetchPromise = fetch('https://openrouter.ai/api/v1/chat/completions', { 
+  try { 
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', { 
       method: 'POST', 
       headers: { 
         'Authorization': `Bearer ${key}`, 
@@ -357,10 +360,12 @@ async function singleAIFetch(text, key, model, aiName) {
           { role: 'user', content: text }
         ], 
         temperature: 0.1 
-      }) 
+      }),
+      signal: controller.signal // <- 关键：底层绑定熔断器
     }); 
     
-    const response = await Promise.race([fetchPromise, timeoutPromise]); 
+    clearTimeout(timeoutId); // 成功响应后清除定时器
+    
     const data = await response.json(); 
     let resultText = ""; 
     
@@ -373,8 +378,9 @@ async function singleAIFetch(text, key, model, aiName) {
     console.log(`🤖 [${aiName}] 分析结果:`, resultText === "" ? "空" : resultText); 
     return resultText.trim().toLowerCase().includes('true'); 
   } catch (e) { 
-    if (e.message === 'TIMEOUT') { 
-      console.error(`🚨 [${aiName}] API 响应超过 8 秒，强行拔网线熔断！`); 
+    clearTimeout(timeoutId);
+    if (e.name === 'AbortError') { 
+      console.error(`🚨 [${aiName}] API 响应超过 6 秒，已物理拔网线熔断！`); 
     } else { 
       console.error(`❌ [${aiName}] 请求异常:`, e.message); 
     } 
@@ -382,20 +388,42 @@ async function singleAIFetch(text, key, model, aiName) {
   } 
 } 
 
-// 🌟 双擎并发调度中心 
+// 🌟 抢答式双擎调度中心 (哪个先查出违规，立刻执行，不再傻等)
 async function checkAdWithOpenRouter(text) { 
-  console.log(`⚡ 启动双擎 AI 识别分析...`); 
+  console.log(`⚡ 启动抢答式双擎 AI 识别分析...`); 
   
-  const [result1, result2] = await Promise.all([ 
-    singleAIFetch(text, OPENROUTER_KEY, AI_MODEL, "主节点(Nvidia)"), 
-    (OPENROUTER_KEY_2 && OPENROUTER_KEY_2.startsWith('sk-or')) 
-      ? singleAIFetch(text, OPENROUTER_KEY_2, AI_MODEL_2, "备节点(Stepfun)") 
-      : Promise.resolve(false) 
-  ]); 
+  return new Promise((resolve) => {
+    let completedCount = 0;
+    let isResolved = false;
+    const useNode2 = (OPENROUTER_KEY_2 && OPENROUTER_KEY_2.startsWith('sk-or'));
+    const totalNodes = useNode2 ? 2 : 1;
 
-  if (result1 || result2) { 
-    console.log(`🚨 双擎裁决：命中规则！`); 
-    return true; 
-  } 
-  return false; 
+    // 处理每次节点返回的函数
+    const handleResult = (result, nodeName) => {
+      if (isResolved) return; // 如果已经结案，直接忽略后续慢节点的返回
+      
+      if (result === true) {
+        isResolved = true;
+        console.log(`🚨 双擎裁决：[${nodeName}] 率先抓到违规，直接触发制裁，停止等待！`);
+        resolve(true); 
+      } else {
+        completedCount++;
+        // 只有所有节点都说没问题，才最终放行
+        if (completedCount === totalNodes) {
+          isResolved = true;
+          console.log(`✅ 双擎裁决：全部节点均未发现异常，放行。`);
+          resolve(false);
+        }
+      }
+    };
+
+    // 并发启动任务，并挂载抢答监听
+    singleAIFetch(text, OPENROUTER_KEY, AI_MODEL, "主节点(Nvidia)")
+      .then(res => handleResult(res, "主节点(Nvidia)"));
+
+    if (useNode2) {
+      singleAIFetch(text, OPENROUTER_KEY_2, AI_MODEL_2, "备节点(Stepfun)")
+        .then(res => handleResult(res, "备节点(Stepfun)"));
+    }
+  });
 }
