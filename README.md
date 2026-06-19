@@ -46,6 +46,7 @@
 5.点击右上角的 Deploy 保存上线。
 
 ###3. 激活挂载 (至关重要)
+https://api.telegram.org/bot<你的TOKEN>/setWebhook?url=https://<你的WORKER域名>
 
     在 Telegram 中搜索您的机器人，进入私聊界面。
 
